@@ -25,24 +25,13 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
 
-        /* ESTILO PARA ALERTAS (ROJO EXTREMO) */
-        .card-alerta-roja { 
-            background-color: #fee2e2 !important; 
-            border: 3px solid #ef4444 !important; 
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
-        }
-        .dark .card-alerta-roja { 
-            background-color: #450a0a !important; 
-            border: 3px solid #ff4d4d !important; 
-            box-shadow: 0 0 20px rgba(255, 77, 77, 0.3);
-        }
-        
+        /* ESTILO PARA FUENTE EN ROJO (CUANDO HAY 6-7 PERSONAS) */
         .text-alerta-roja {
-            color: #b91c1c !important;
+            color: #ef4444 !important; /* Rojo intenso */
             font-weight: 900 !important;
         }
         .dark .text-alerta-roja {
-            color: #fca5a5 !important;
+            color: #ff4d4d !important; /* Rojo vibrante en modo oscuro */
         }
 
         /* Estilos base de tarjetas */
@@ -57,12 +46,12 @@
         .card-comp { background-color: #f3e8ff; border: 1px solid #e9d5ff; color: #6b21a8; }
         .card-default { background-color: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; }
 
-        .dark .card-pm:not(.card-noche):not(.card-alerta-roja) { background-color: #064e3b; color: #dcfce7; }
-        .dark .card-pt:not(.card-noche):not(.card-alerta-roja) { background-color: #065f46; color: #dcfce7; }
-        .dark .card-ptt:not(.card-noche):not(.card-alerta-roja) { background-color: #14532d; color: #ffffff; }
-        .dark .card-cm:not(.card-noche):not(.card-alerta-roja) { background-color: #7c2d12; color: #ffedd5; }
-        .dark .card-ct:not(.card-noche):not(.card-alerta-roja) { background-color: #9a3412; color: #ffedd5; }
-        .dark .card-ctt:not(.card-noche):not(.card-alerta-roja) { background-color: #c2410c; color: #ffffff; }
+        .dark .card-pm:not(.card-noche) { background-color: #064e3b; color: #dcfce7; }
+        .dark .card-pt:not(.card-noche) { background-color: #065f46; color: #dcfce7; }
+        .dark .card-ptt:not(.card-noche) { background-color: #14532d; color: #ffffff; }
+        .dark .card-cm:not(.card-noche) { background-color: #7c2d12; color: #ffedd5; }
+        .dark .card-ct:not(.card-noche) { background-color: #9a3412; color: #ffedd5; }
+        .dark .card-ctt:not(.card-noche) { background-color: #c2410c; color: #ffffff; }
         .dark .card-vaca { background-color: #713f12; color: #fef9c3; border-color: #854d0e; }
 
         .current-week-card { outline: 4px solid #3b82f6; outline-offset: 2px; position: relative; z-index: 20; }
@@ -257,6 +246,21 @@
                         let isAlert = false;
                         const weekPositions = globalWeekMap[w] || [];
                         
+                        let staffCount = 0;
+                        for (let pos of weekPositions) {
+                             for (let r_check = pos.r + 1; r_check <= range.e.r; r_check++) {
+                                 const cell_check = sheet[XLSX.utils.encode_cell({r: r_check, c: pos.c})];
+                                 if (cell_check && cell_check.v !== undefined) {
+                                     const v = parseInt(cell_check.v);
+                                     if (v >= 5 && v <= 8) {
+                                         staffCount = v;
+                                         break;
+                                     }
+                                 }
+                             }
+                             if (staffCount > 0) break;
+                        }
+
                         for (let pos of weekPositions) {
                             for (let r of userRows) {
                                 if (Math.abs(r - pos.r) < 15) {
@@ -266,15 +270,16 @@
                                         if (rawVal !== "" && rawVal !== "0" && isNaN(rawVal) && !TARGET_NAMES.includes(rawVal)) {
                                             finalCode = rawVal;
                                             
-                                            // MEJORA: Detección de color y símbolo especial
-                                            if (rawVal.includes('+') || rawVal.includes('*')) isAlert = true;
+                                            // REGLA: PT Rojo si staffCount es 6 o 7
+                                            if (rawVal === "PT" && (staffCount === 6 || staffCount === 7)) {
+                                                isAlert = true;
+                                            }
 
+                                            // REGLAS SECUNDARIAS (Excel)
+                                            if (rawVal.includes('+') || rawVal.includes('*')) isAlert = true;
                                             if (cell.s && cell.s.font && cell.s.font.color) {
                                                 const rgb = cell.s.font.color.rgb;
-                                                // Códigos de rojo comunes en Excel
-                                                if (rgb && (rgb.startsWith('FF00') || rgb.includes('C00000') || rgb.includes('FFC000'))) {
-                                                    isAlert = true;
-                                                }
+                                                if (rgb && (rgb.startsWith('FF00') || rgb.includes('C00000'))) isAlert = true;
                                             }
 
                                             if (cell.c && cell.c.length > 0) finalNote = cell.c[0].t.trim();
@@ -338,20 +343,16 @@
                 const baseCode = isNoche ? t.code.slice(0, -1) : t.code;
                 
                 if (!isEmpty) {
-                    if (t.code.includes('V') || t.code.includes('H') || t.code.includes('E')) {
-                        stats.v++;
-                    }
+                    if (t.code.includes('V') || t.code.includes('H') || t.code.includes('E')) stats.v++;
                     else if (isNoche) stats.n++;
                     else if (t.code.includes('M')) stats.m++;
                     else if (t.code.includes('T')) stats.t++;
                 }
 
+                // Estilo normal de la tarjeta
                 let styleClass = isEmpty ? 'bg-slate-100 dark:bg-slate-800/50 opacity-30 grayscale' : (SHIFT_STYLES[baseCode] || 'card-default');
                 if (isNoche) styleClass += ' card-noche';
                 
-                // Aplicar Alerta Visual Prioritaria
-                if (t.alert) styleClass = 'card-alerta-roja';
-
                 const card = document.createElement('div');
                 const isCurrent = t.week === CURRENT_WEEK;
                 const monthName = getMonthFromWeek(t.week);
@@ -364,16 +365,10 @@
                     </div>
                 ` : '';
 
-                const alertIcon = t.alert ? `
-                    <div class="absolute top-2 left-2 text-red-600 dark:text-red-400">
-                        <i class="fas fa-exclamation-circle text-xs animate-pulse"></i>
-                    </div>
-                ` : '';
-
+                // Aplicar solo color de fuente rojo si hay alerta
                 const textClass = t.alert ? 'text-alerta-roja' : '';
 
                 card.innerHTML = `
-                    ${alertIcon}
                     <span class="text-[8px] font-black opacity-40 uppercase mb-0.5">${monthName}</span>
                     <span class="text-[10px] font-extrabold opacity-20 uppercase mb-1">Sem. ${t.week}</span>
                     <span class="text-2xl font-black tracking-tighter ${textClass}">${isEmpty ? '---' : t.code}</span>
@@ -382,7 +377,7 @@
 
                 card.onclick = () => {
                     let msg = `SEMANA ${t.week}`;
-                    if (t.alert) msg += `\n⚠️ AVISO: Se ha detectado un cambio o turno especial (marcado en rojo/símbolo en Excel).`;
+                    if (t.alert) msg += `\n⚠️ AVISO: Turno marcado en rojo por capacidad de personas (6/7).`;
                     if (t.note) msg += `\n\n📝 NOTA:\n${t.note}`;
                     if (t.alert || t.note) alert(msg);
                 };
