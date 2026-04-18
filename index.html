@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Turnos AP 2026 - v74</title>
-    <!-- Papaparse es mejor para leer CSVs desde URLs que XLSX -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <title>Turnos AP 2026 - v73</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
@@ -75,10 +74,14 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-extrabold uppercase tracking-tight text-slate-800 dark:text-white">Turnos AP 2026</h1>
-                    <p class="text-[8px] font-bold text-indigo-500 leading-none uppercase">v74 - <span id="sync-status">Sincronizando...</span></p>
+                    <p class="text-[8px] font-bold text-indigo-500 leading-none uppercase">v73 - <span id="sync-status">SIN DATOS</span></p>
                 </div>
             </div>
             <div class="flex gap-2 items-center">
+                <!-- Botón de actualización: Se mostrará una vez haya datos guardados -->
+                <button id="btn-update-excel" onclick="document.getElementById('file-input').click()" class="hidden p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 transition-all active:scale-90 shadow-sm border border-emerald-200 dark:border-emerald-800" title="Actualizar Excel">
+                    <i class="fas fa-sync-alt text-xs"></i>
+                </button>
                 <button id="theme-toggle" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all active:scale-90">
                     <i id="theme-icon" class="fas fa-moon text-indigo-600 dark:text-yellow-400 text-xs"></i>
                 </button>
@@ -87,16 +90,26 @@
     </nav>
 
     <main class="container mx-auto px-3 py-4">
-        
-        <!-- Loading State -->
-        <div id="loading-state" class="flex flex-col items-center justify-center py-20 animate-pulse">
-            <i class="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i>
-            <p class="text-sm font-bold text-slate-500">Descargando datos actualizados...</p>
+        <!-- Input de archivo oculto (Se usa tanto para carga inicial como para actualizar) -->
+        <input type="file" id="file-input" class="hidden" accept=".xlsx">
+
+        <div id="upload-state" class="flex flex-col items-center text-center py-10 px-4 animate-fade-in">
+            <div class="bg-white dark:bg-darkCard p-8 rounded-[2.5rem] shadow-xl border dark:border-darkBorder w-full max-w-md">
+                <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-file-excel text-2xl text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <h3 class="font-black text-slate-800 dark:text-white uppercase text-lg">Subir Excel</h3>
+                <p class="text-xs text-slate-500 mt-2 mb-8 italic">Selecciona el archivo para cargar todos los turnos. Se guardarán en tu dispositivo automáticamente.</p>
+                <button onclick="document.getElementById('file-input').click()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform">
+                    Seleccionar Archivo
+                </button>
+            </div>
         </div>
 
         <div id="selector-container" class="mb-6 hidden animate-fade-in">
             <div class="flex justify-between items-center mb-2 px-1">
                 <label class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Usuario</label>
+                <button onclick="resetApp()" class="text-[9px] font-bold text-red-400 uppercase">Borrar App</button>
             </div>
             <select id="user-selector" class="w-full bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-darkBorder rounded-2xl px-5 py-4 font-bold shadow-lg dark:text-white appearance-none text-lg outline-none focus:border-indigo-500 transition-colors">
                 <option value="">ELIJE TU NOMBRE</option>
@@ -156,11 +169,6 @@
     </main>
 
     <script>
-        // === CONFIGURACIÓN IMPORTANTE ===
-        // Reemplaza el enlace de abajo por el enlace .csv que te da Google Sheets
-        const GOOGLE_SHEETS_CSV_URL = "AQUI_PONES_TU_ENLACE_DE_GOOGLE_SHEETS";
-        // ================================
-
         const SHIFT_STYLES = {
             'PM': 'card-pm', 'PT': 'card-pt', 'PTT': 'card-ptt',
             'CM': 'card-cm', 'CT': 'card-ct', 'CT.': 'card-ct', 'CTT': 'card-ctt',
@@ -170,6 +178,8 @@
         const TARGET_NAMES = ["ANGY", "PACO", "IVAN", "JEAN", "NATALIA", "LUIS", "ALBERTO", "ENZO"];
         const MONTH_NAMES = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
 
+        // Usamos una nueva clave para asegurar que cargue la lógica correcta desde cero
+        const STORAGE_KEY = 'sync_turnosap_v73';
         let db = [];
 
         function getWeekNumber() {
@@ -189,47 +199,47 @@
         
         const CURRENT_WEEK = getWeekNumber();
 
-        // Función principal para descargar y procesar los datos de Google Sheets
-        function fetchAndProcessData() {
-            if (GOOGLE_SHEETS_CSV_URL === "AQUI_PONES_TU_ENLACE_DE_GOOGLE_SHEETS") {
-                document.getElementById('loading-state').innerHTML = '<p class="text-red-500 font-bold p-4 text-center">Falta configurar el enlace de Google Sheets en el código.</p>';
-                document.getElementById('sync-status').textContent = "ERROR URL";
-                return;
-            }
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('sync-status').textContent = "LEYENDO...";
+            
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                syncData(ev.target.result);
+                // Vaciamos el input para permitir subir el mismo archivo en el futuro si se editó
+                e.target.value = ''; 
+            };
+            reader.readAsArrayBuffer(file);
+        });
 
-            Papa.parse(GOOGLE_SHEETS_CSV_URL, {
-                download: true,
-                header: false,
-                complete: function(results) {
-                    processCSVData(results.data);
-                },
-                error: function(error) {
-                    console.error("Error al descargar CSV:", error);
-                    document.getElementById('sync-status').textContent = "ERROR RED";
-                    document.getElementById('loading-state').innerHTML = '<p class="text-red-500 font-bold p-4 text-center">No se pudo descargar los datos. Revisa tu conexión a internet o el enlace de Google Sheets.</p>';
-                }
-            });
-        }
-
-        function processCSVData(rows) {
+        function syncData(buffer) {
             try {
+                const data = new Uint8Array(buffer);
+                const workbook = XLSX.read(data, { type: 'array', cellStyles: true });
+                const sheetName = workbook.SheetNames.find(n => n.includes("2026")) || workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const range = XLSX.utils.decode_range(sheet['!ref']);
+                
                 let globalWeekMap = {};
                 
-                // Mapear las filas donde dice "Semana" y encontrar las columnas de la 1 a la 53
-                for (let r = 0; r < rows.length; r++) {
+                // Lógica mejorada: Solo extraer números de las semanas si la fila contiene la palabra "SEMANA"
+                for (let r = range.s.r; r <= range.e.r; r++) {
                     let isWeekRow = false;
                     for (let c = 0; c <= 5; c++) {
-                        if (rows[r][c] && String(rows[r][c]).trim().toUpperCase() === 'SEMANA') {
+                        const cell = sheet[XLSX.utils.encode_cell({r: r, c: c})];
+                        if (cell && cell.v !== undefined && String(cell.v).trim().toUpperCase() === 'SEMANA') {
                             isWeekRow = true;
                             break;
                         }
                     }
 
                     if (isWeekRow) {
-                        for (let c = 0; c < rows[r].length; c++) {
-                            const cellValue = rows[r][c];
-                            if (cellValue && !isNaN(parseInt(cellValue))) {
-                                const val = parseInt(cellValue);
+                        for (let c = range.s.c; c <= range.e.c; c++) {
+                            const cell = sheet[XLSX.utils.encode_cell({r: r, c: c})];
+                            if (cell && cell.v !== undefined && !isNaN(parseInt(cell.v))) {
+                                const val = parseInt(cell.v);
                                 if (val >= 1 && val <= 53) {
                                     if (!globalWeekMap[val]) globalWeekMap[val] = [];
                                     globalWeekMap[val].push({ r, c });
@@ -239,16 +249,17 @@
                     }
                 }
 
-                // Mapear las filas de cada usuario
                 let userRowMap = {};
                 TARGET_NAMES.forEach(name => {
                     userRowMap[name] = [];
-                    for (let r = 0; r < rows.length; r++) {
-                        const c0 = rows[r][0] ? String(rows[r][0]).toUpperCase() : "";
-                        const c1 = rows[r][1] ? String(rows[r][1]).toUpperCase() : "";
-                        const c2 = rows[r][2] ? String(rows[r][2]).toUpperCase() : "";
+                    for (let r = range.s.r; r <= range.e.r; r++) {
+                        const c0 = sheet[XLSX.utils.encode_cell({r: r, c: 0})];
+                        const c1 = sheet[XLSX.utils.encode_cell({r: r, c: 1})];
+                        const c2 = sheet[XLSX.utils.encode_cell({r: r, c: 2})];
                         
-                        if (c0.includes(name) || c1.includes(name) || c2.includes(name)) {
+                        if ((c0 && String(c0.v).toUpperCase().includes(name)) ||
+                            (c1 && String(c1.v).toUpperCase().includes(name)) ||
+                            (c2 && String(c2.v).toUpperCase().includes(name))) {
                             userRowMap[name].push(r);
                         }
                     }
@@ -266,12 +277,11 @@
                         const weekPositions = globalWeekMap[w] || [];
                         
                         for (let pos of weekPositions) {
-                            // Buscar cuántos AP hay esa semana (aproximación buscando números entre 5 y 8 abajo)
                             let staffCount = 0;
-                            for (let r_check = pos.r + 1; r_check <= Math.min(pos.r + 12, rows.length - 1); r_check++) {
-                                const checkVal = rows[r_check][pos.c];
-                                if (checkVal && !isNaN(parseInt(checkVal))) {
-                                    const v = parseInt(checkVal);
+                            for (let r_check = pos.r + 1; r_check <= pos.r + 12; r_check++) {
+                                const cell_check = sheet[XLSX.utils.encode_cell({r: r_check, c: pos.c})];
+                                if (cell_check && cell_check.v !== undefined) {
+                                    const v = parseInt(cell_check.v);
                                     if (v >= 5 && v <= 8) {
                                         staffCount = v;
                                         break;
@@ -279,7 +289,6 @@
                                 }
                             }
 
-                            // Encontrar la fila del usuario más cercana a la fila de la semana
                             let closestRow = -1;
                             let minDistance = 999;
                             for (let r of userRows) {
@@ -291,19 +300,26 @@
                             }
 
                             if (closestRow !== -1) {
-                                const rawVal = String(rows[closestRow][pos.c] || "").trim().toUpperCase();
-                                
-                                if (rawVal !== "" && rawVal !== "0" && isNaN(rawVal) && !TARGET_NAMES.includes(rawVal)) {
-                                    finalCode = rawVal;
+                                const cell = sheet[XLSX.utils.encode_cell({r: closestRow, c: pos.c})];
+                                if (cell && cell.v !== undefined) {
+                                    const rawVal = String(cell.v).trim().toUpperCase();
                                     
-                                    if (rawVal === "PT" && (staffCount === 6 || staffCount === 7)) {
-                                        isAlert = true;
-                                    }
-                                    if (rawVal.includes('+') || rawVal.includes('*')) isAlert = true;
-                                    // Nota: En formato CSV perdemos los colores de las celdas, así que dependemos
-                                    // de signos como '+' o '*' para marcar alertas visuales.
+                                    if (rawVal !== "" && rawVal !== "0" && isNaN(rawVal) && !TARGET_NAMES.includes(rawVal)) {
+                                        finalCode = rawVal;
+                                        
+                                        if (rawVal === "PT" && (staffCount === 6 || staffCount === 7)) {
+                                            isAlert = true;
+                                        }
 
-                                    break;
+                                        if (rawVal.includes('+') || rawVal.includes('*')) isAlert = true;
+                                        if (cell.s && cell.s.font && cell.s.font.color) {
+                                            const rgb = cell.s.font.color.rgb;
+                                            if (rgb && (rgb.startsWith('FF00') || rgb.includes('C00000'))) isAlert = true;
+                                        }
+
+                                        if (cell.c && cell.c.length > 0) finalNote = cell.c[0].t.trim();
+                                        break;
+                                    }
                                 }
                             }
                             if (finalCode !== "S/T") break;
@@ -314,20 +330,22 @@
 
                 if (syncResults.length > 0) {
                     db = syncResults;
-                    document.getElementById('sync-status').textContent = "EN LÍNEA";
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+                    document.getElementById('sync-status').textContent = "GUARDADO EN MÓVIL";
                     renderUI();
                 } else {
-                    document.getElementById('sync-status').textContent = "ERROR DATOS";
-                    document.getElementById('loading-state').innerHTML = '<p class="text-red-500 font-bold p-4 text-center">No se encontraron turnos en el documento online.</p>';
+                    document.getElementById('sync-status').textContent = "ERROR AL LEER";
+                    alert("No se detectaron turnos válidos. Comprueba el formato de la hoja 2026.");
                 }
-            } catch (err) {
-                console.error(err);
-                document.getElementById('sync-status').textContent = "ERROR AL PROCESAR";
+            } catch (err) { 
+                document.getElementById('sync-status').textContent = "ERROR AL LEER";
+                alert("Error al leer el archivo: " + err.message); 
             }
         }
 
         function renderUI() {
-            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('upload-state').classList.add('hidden');
+            document.getElementById('btn-update-excel').classList.remove('hidden'); // Mostramos el botón de actualizar
             
             const selector = document.getElementById('user-selector');
             const saved = localStorage.getItem('turnosap_user_pref');
@@ -383,12 +401,21 @@
 
                 card.className = `${styleClass} ${isCurrent ? 'current-week-card scale-105 shadow-xl' : ''} flex flex-col items-center justify-center py-6 px-1 rounded-[2.5rem] relative animate-fade-in transition-transform active:scale-95 cursor-pointer`;
                 
+                const noteBadge = t.note ? `<div class="mt-2 bg-black/10 dark:bg-white/10 px-3 py-1 rounded-full"><span class="text-[7px] font-black uppercase tracking-tighter text-slate-700 dark:text-white">NOTAS</span></div>` : '';
+
                 card.innerHTML = `
                     <span class="text-[8px] font-black opacity-40 uppercase mb-0.5">${monthName}</span>
                     <span class="text-[10px] font-extrabold opacity-20 uppercase mb-1">Sem. ${t.week}</span>
                     <span class="text-2xl font-black tracking-tighter ${textClass}">${isEmpty ? '---' : t.code}</span>
+                    ${noteBadge}
                 `;
 
+                card.onclick = () => {
+                    let msg = `SEMANA ${t.week}`;
+                    if (t.note) msg += `\n\n📝 NOTA DEL EXCEL:\n${t.note}`;
+                    
+                    if (t.note) alert(msg);
+                };
                 wrapper.appendChild(card);
             });
 
@@ -404,6 +431,13 @@
                 const target = document.querySelector('.current-week-card');
                 if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 300);
+        }
+
+        function resetApp() {
+            if(confirm("¿Seguro que quieres borrar la app del teléfono y empezar de cero? (Tendrás que volver a subir el Excel)")) {
+                localStorage.clear();
+                location.reload();
+            }
         }
 
         const themeToggle = document.getElementById('theme-toggle');
@@ -422,8 +456,12 @@
             if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
             updateThemeIcon();
             
-            // Iniciar la descarga de datos automáticamente
-            fetchAndProcessData();
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                db = JSON.parse(savedData);
+                document.getElementById('sync-status').textContent = "GUARDADO EN MÓVIL";
+                renderUI();
+            }
         };
     </script>
 </body>
