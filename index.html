@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Turnos AP 2026 - v71</title>
+    <title>Turnos AP 2026 - v72</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -74,7 +74,7 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-extrabold uppercase tracking-tight text-slate-800 dark:text-white">Turnos AP 2026</h1>
-                    <p class="text-[8px] font-bold text-indigo-500 leading-none uppercase">v71 - <span id="sync-status">INACTIVO</span></p>
+                    <p class="text-[8px] font-bold text-indigo-500 leading-none uppercase">v72 - <span id="sync-status">INACTIVO</span></p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -165,7 +165,7 @@
     <script>
         const SHIFT_STYLES = {
             'PM': 'card-pm', 'PT': 'card-pt', 'PTT': 'card-ptt',
-            'CM': 'card-cm', 'CT': 'card-ct', 'CTT': 'card-ctt',
+            'CM': 'card-cm', 'CT': 'card-ct', 'CT.': 'card-ct', 'CTT': 'card-ctt',
             'V': 'card-vaca', 'H': 'card-comp', 'E': 'card-comp'
         };
 
@@ -208,14 +208,30 @@
                 const range = XLSX.utils.decode_range(sheet['!ref']);
                 
                 let globalWeekMap = {};
+                
+                // NUEVA LÓGICA: Solo extraer números de las semanas si la fila contiene la palabra "SEMANA"
                 for (let r = range.s.r; r <= range.e.r; r++) {
-                    for (let c = range.s.c; c <= range.e.c; c++) {
+                    let isWeekRow = false;
+                    
+                    // Comprobamos si en las primeras 5 columnas de esta fila existe la palabra "SEMANA"
+                    for (let c = 0; c <= 5; c++) {
                         const cell = sheet[XLSX.utils.encode_cell({r: r, c: c})];
-                        if (cell && cell.v !== undefined && !isNaN(parseInt(cell.v))) {
-                            const val = parseInt(cell.v);
-                            if (val >= 1 && val <= 53) {
-                                if (!globalWeekMap[val]) globalWeekMap[val] = [];
-                                globalWeekMap[val].push({ r, c });
+                        if (cell && cell.v !== undefined && String(cell.v).trim().toUpperCase() === 'SEMANA') {
+                            isWeekRow = true;
+                            break;
+                        }
+                    }
+
+                    // Si es la fila correcta, guardamos las columnas donde están los números del 1 al 53
+                    if (isWeekRow) {
+                        for (let c = range.s.c; c <= range.e.c; c++) {
+                            const cell = sheet[XLSX.utils.encode_cell({r: r, c: c})];
+                            if (cell && cell.v !== undefined && !isNaN(parseInt(cell.v))) {
+                                const val = parseInt(cell.v);
+                                if (val >= 1 && val <= 53) {
+                                    if (!globalWeekMap[val]) globalWeekMap[val] = [];
+                                    globalWeekMap[val].push({ r, c });
+                                }
                             }
                         }
                     }
@@ -225,10 +241,14 @@
                 TARGET_NAMES.forEach(name => {
                     userRowMap[name] = [];
                     for (let r = range.s.r; r <= range.e.r; r++) {
+                        // Comprobamos en las 3 primeras columnas por si el nombre está desplazado
                         const c0 = sheet[XLSX.utils.encode_cell({r: r, c: 0})];
                         const c1 = sheet[XLSX.utils.encode_cell({r: r, c: 1})];
+                        const c2 = sheet[XLSX.utils.encode_cell({r: r, c: 2})];
+                        
                         if ((c0 && String(c0.v).toUpperCase().includes(name)) ||
-                            (c1 && String(c1.v).toUpperCase().includes(name))) {
+                            (c1 && String(c1.v).toUpperCase().includes(name)) ||
+                            (c2 && String(c2.v).toUpperCase().includes(name))) {
                             userRowMap[name].push(r);
                         }
                     }
@@ -302,6 +322,8 @@
                     localStorage.setItem('sync_turnosap_v70', JSON.stringify(db));
                     document.getElementById('sync-status').textContent = "CONECTADO";
                     renderUI();
+                } else {
+                    alert("No se detectaron turnos válidos. Comprueba el formato de la hoja 2026.");
                 }
             } catch (err) { alert("Error al leer el archivo: " + err.message); }
         }
@@ -346,7 +368,7 @@
                 const baseCode = isNoche ? t.code.slice(0, -1) : t.code;
                 
                 if (!isEmpty) {
-                    if (t.code.includes('V') || t.code.includes('H') || t.code.includes('E')) stats.v++;
+                    if (t.code.includes('V') || t.code.includes('H') || t.code.includes('E') || t.code.includes('+')) stats.v++;
                     else if (isNoche) stats.n++;
                     else if (t.code.includes('M')) stats.m++;
                     else if (t.code.includes('T')) stats.t++;
