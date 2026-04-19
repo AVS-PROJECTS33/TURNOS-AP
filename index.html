@@ -514,6 +514,10 @@
                     // Sort order: PM, PT, PTT, CM, CT, CTT. Others (V, H, E, S/T, etc) go to bottom.
                     const customOrder = ['PM', 'PT', 'PTT', 'CM', 'CT', 'CTT'];
                     weekShifts.sort((a, b) => {
+                        // Forzar PM. al principio de todo
+                        if (a.code === 'PM.' && b.code !== 'PM.') return -1;
+                        if (b.code === 'PM.' && a.code !== 'PM.') return 1;
+
                         const codeA = a.code.replace('.', '');
                         const codeB = b.code.replace('.', '');
                         let posA = customOrder.indexOf(codeA);
