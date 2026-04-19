@@ -467,10 +467,29 @@
                 `;
 
                 card.onclick = () => {
-                    let msg = `SEMANA ${t.week}`;
-                    if (t.note) msg += `\n\n📝 NOTA DEL EXCEL:\n${t.note}`;
+                    let msg = `SEMANA ${t.week}\n`;
+                    if (t.note) msg += `\n📝 NOTA DEL EXCEL:\n${t.note}\n`;
                     
-                    if (t.note) alert(msg);
+                    msg += `\n👥 COMPAÑEROS:\n`;
+                    const weekShifts = db.filter(s => s.week === t.week && s.user !== user);
+                    
+                    const customOrder = ['PM', 'PT', 'PTT', 'CM', 'CT', 'CTT'];
+                    weekShifts.sort((a, b) => {
+                        const codeA = a.code.replace('.', '');
+                        const codeB = b.code.replace('.', '');
+                        let posA = customOrder.indexOf(codeA);
+                        let posB = customOrder.indexOf(codeB);
+                        if (posA === -1) posA = 99;
+                        if (posB === -1) posB = 99;
+                        if (posA !== posB) return posA - posB;
+                        return a.code.localeCompare(b.code);
+                    });
+
+                    weekShifts.forEach(s => {
+                        msg += `• ${s.user}: ${s.code !== 'S/T' ? s.code : '---'}\n`;
+                    });
+                    
+                    alert(msg);
                 };
                 wrapper.appendChild(card);
             });
