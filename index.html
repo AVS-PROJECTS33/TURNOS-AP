@@ -176,6 +176,26 @@
         </div>
     </div>
 
+    <!-- Modal de Detalles de Turno y Compañeros -->
+    <div id="shift-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in" onclick="this.classList.add('hidden')">
+        <div class="bg-white dark:bg-darkCard p-6 rounded-3xl shadow-2xl max-w-sm w-full border dark:border-darkBorder relative max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="shift-modal-title" class="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">SEMANA --</h3>
+                <button onclick="document.getElementById('shift-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="shift-modal-note" class="hidden mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-2xl text-sm text-amber-800 dark:text-amber-200">
+                <p class="font-bold mb-1 uppercase text-[10px] tracking-wider"><i class="fas fa-sticky-note mr-1"></i> Nota del Excel</p>
+                <p id="shift-modal-note-text" class="whitespace-pre-wrap"></p>
+            </div>
+            <h4 class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Equipo</h4>
+            <div id="shift-modal-list" class="space-y-2">
+                <!-- Lista inyectada por JS -->
+            </div>
+        </div>
+    </div>
+
     <script>
         const SHIFT_STYLES = {
             'PM': 'card-pm', 'PT': 'card-pt', 'PTT': 'card-ptt',
@@ -467,12 +487,23 @@
                 `;
 
                 card.onclick = () => {
-                    let msg = `SEMANA ${t.week}\n`;
-                    if (t.note) msg += `\n📝 NOTA DEL EXCEL:\n${t.note}\n`;
+                    // Update Modal Title
+                    document.getElementById('shift-modal-title').textContent = `SEMANA ${t.week}`;
                     
-                    msg += `\n👥 COMPAÑEROS:\n`;
-                    const weekShifts = db.filter(s => s.week === t.week && s.user !== user);
+                    // Update Modal Note
+                    const noteEl = document.getElementById('shift-modal-note');
+                    const noteText = document.getElementById('shift-modal-note-text');
+                    if (t.note) {
+                        noteText.textContent = t.note;
+                        noteEl.classList.remove('hidden');
+                    } else {
+                        noteEl.classList.add('hidden');
+                    }
+
+                    // Get ALL shifts for this week (including the current user)
+                    const weekShifts = db.filter(s => s.week === t.week);
                     
+                    // Sort order: PM, PT, PTT, CM, CT, CTT. Others (V, H, E, S/T, etc) go to bottom.
                     const customOrder = ['PM', 'PT', 'PTT', 'CM', 'CT', 'CTT'];
                     weekShifts.sort((a, b) => {
                         const codeA = a.code.replace('.', '');
@@ -485,11 +516,36 @@
                         return a.code.localeCompare(b.code);
                     });
 
-                    weekShifts.forEach(s => {
-                        msg += `• ${s.user}: ${s.code !== 'S/T' ? s.code : '---'}\n`;
-                    });
+                    // Render List
+                    const listEl = document.getElementById('shift-modal-list');
+                    listEl.innerHTML = '';
                     
-                    alert(msg);
+                    weekShifts.forEach(s => {
+                        const sIsEmpty = s.code === "S/T";
+                        const sIsNoche = !sIsEmpty && s.code.endsWith('.');
+                        const sBaseCode = sIsNoche ? s.code.slice(0, -1) : s.code;
+                        
+                        let badgeClass = sIsEmpty ? 'bg-slate-200 dark:bg-slate-700 opacity-50 text-slate-500 dark:text-slate-400' : (SHIFT_STYLES[sBaseCode] || 'card-default');
+                        if (sIsNoche) badgeClass += ' card-noche';
+                        
+                        const sTextClass = s.alert ? 'text-alerta-roja' : '';
+                        
+                        // Highlight current user's row
+                        const isMe = s.user === user;
+                        const rowClass = isMe ? 'bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800' : 'bg-slate-50 dark:bg-slate-800/50';
+                        const nameClass = isMe ? 'text-indigo-700 dark:text-indigo-400 font-black' : 'text-slate-700 dark:text-slate-300 font-bold';
+
+                        const item = document.createElement('div');
+                        item.className = `flex justify-between items-center px-4 py-3 rounded-2xl ${rowClass}`;
+                        item.innerHTML = `
+                            <span class="text-sm ${nameClass}">${s.user} ${isMe ? '<span class="text-[10px] uppercase ml-1 opacity-60">(Tú)</span>' : ''}</span>
+                            <span class="${badgeClass} px-3 py-1 rounded-xl font-black text-sm tracking-tight shadow-sm border ${sTextClass}">${sIsEmpty ? '---' : s.code}</span>
+                        `;
+                        listEl.appendChild(item);
+                    });
+
+                    // Show Modal
+                    document.getElementById('shift-modal').classList.remove('hidden');
                 };
                 wrapper.appendChild(card);
             });
