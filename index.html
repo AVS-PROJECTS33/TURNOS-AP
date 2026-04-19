@@ -34,7 +34,7 @@
         }
         .dark .text-alerta-roja { color: #ff4d4d !important; }
 
-        /* Colores de las tarjetas */
+        /* Colores de las tarjetas - Modo Claro */
         .card-noche { background-color: #000000 !important; color: #ffffff !important; border: 1px solid #333 !important; }
         .card-pm { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
         .card-pt { background-color: #dcfce7; border: 1px solid #86efac; color: #166534; }
@@ -46,13 +46,16 @@
         .card-comp { background-color: #f3e8ff; border: 1px solid #e9d5ff; color: #6b21a8; }
         .card-default { background-color: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; }
 
-        .dark .card-pm:not(.card-noche) { background-color: #064e3b; color: #dcfce7; }
-        .dark .card-pt:not(.card-noche) { background-color: #065f46; color: #dcfce7; }
-        .dark .card-ptt:not(.card-noche) { background-color: #14532d; color: #ffffff; }
-        .dark .card-cm:not(.card-noche) { background-color: #7c2d12; color: #ffedd5; }
-        .dark .card-ct:not(.card-noche) { background-color: #9a3412; color: #ffedd5; }
-        .dark .card-ctt:not(.card-noche) { background-color: #c2410c; color: #ffffff; }
-        .dark .card-vaca { background-color: #713f12; color: #fef9c3; border-color: #854d0e; }
+        /* Colores de las tarjetas - Modo Oscuro Mejorado (Mayor contraste visual) */
+        .dark .card-pm:not(.card-noche) { background-color: #022c22; border-color: #059669; color: #6ee7b7; }
+        .dark .card-pt:not(.card-noche) { background-color: #064e3b; border-color: #10b981; color: #a7f3d0; }
+        .dark .card-ptt:not(.card-noche) { background-color: #047857; border-color: #34d399; color: #ffffff; }
+        .dark .card-cm:not(.card-noche) { background-color: #431407; border-color: #ea580c; color: #fdba74; }
+        .dark .card-ct:not(.card-noche) { background-color: #7c2d12; border-color: #f97316; color: #fed7aa; }
+        .dark .card-ctt:not(.card-noche) { background-color: #9a3412; border-color: #fb923c; color: #ffffff; }
+        .dark .card-vaca { background-color: #422006; border-color: #ca8a04; color: #fef08a; }
+        .dark .card-comp { background-color: #3b0764; border-color: #9333ea; color: #d8b4fe; }
+        .dark .card-default { background-color: #1e293b; border-color: #334155; color: #94a3b8; }
 
         .current-week-card { outline: 4px solid #3b82f6; outline-offset: 2px; position: relative; z-index: 20; }
         .current-week-card::after {
@@ -78,7 +81,11 @@
                 </div>
             </div>
             <div class="flex gap-2 items-center">
-                <!-- Botón de actualización: Modificado para forzar la descarga manual desde Dropbox -->
+                <!-- Botón de información -->
+                <button onclick="document.getElementById('info-modal').classList.remove('hidden')" class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-all active:scale-90 shadow-sm border border-blue-200 dark:border-blue-800" title="Información">
+                    <i class="fas fa-info text-xs w-3 text-center"></i>
+                </button>
+                <!-- Botón de actualización manual -->
                 <button id="btn-update-excel" onclick="descargarDesdeDropbox(true)" class="hidden p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 transition-all active:scale-90 shadow-sm border border-emerald-200 dark:border-emerald-800" title="Sincronizar con Dropbox">
                     <i id="sync-icon" class="fas fa-cloud-download-alt text-xs"></i>
                 </button>
@@ -90,28 +97,13 @@
     </nav>
 
     <main class="container mx-auto px-3 py-4">
-        <!-- Input de archivo oculto (Se mantiene por si se necesita uso local, aunque Dropbox es prioridad) -->
+        <!-- Input de archivo oculto (Se mantiene por si se necesita uso local) -->
         <input type="file" id="file-input" class="hidden" accept=".xlsx">
 
-        <!-- Modificado para que el botón principal descargue de Dropbox en lugar de abrir archivo local -->
-        <div id="upload-state" class="flex flex-col items-center text-center py-10 px-4 animate-fade-in">
-            <div class="bg-white dark:bg-darkCard p-8 rounded-[2.5rem] shadow-xl border dark:border-darkBorder w-full max-w-md">
-                <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i class="fab fa-dropbox text-2xl text-blue-600 dark:text-blue-400"></i>
-                </div>
-                <h3 class="font-black text-slate-800 dark:text-white uppercase text-lg">Conectar Dropbox</h3>
-                <p class="text-xs text-slate-500 mt-2 mb-8 italic">Descarga los turnos más recientes directamente desde la nube de Dropbox.</p>
-                <button id="btn-initial-sync" onclick="descargarDesdeDropbox(true)" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                    <i class="fas fa-cloud-download-alt"></i> Sincronizar Ahora
-                </button>
-                <p class="text-[10px] text-slate-400 mt-4 cursor-pointer underline" onclick="document.getElementById('file-input').click()">O cargar archivo manualmente</p>
-            </div>
-        </div>
-
+        <!-- Contenedor del selector visible desde el inicio -->
         <div id="selector-container" class="mb-6 hidden animate-fade-in">
             <div class="flex justify-between items-center mb-2 px-1">
                 <label class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Usuario</label>
-                <button onclick="resetApp()" class="text-[9px] font-bold text-red-400 uppercase">Borrar App</button>
             </div>
             <select id="user-selector" class="w-full bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-darkBorder rounded-2xl px-5 py-4 font-bold shadow-lg dark:text-white appearance-none text-lg outline-none focus:border-indigo-500 transition-colors">
                 <option value="">ELIJE TU NOMBRE</option>
@@ -170,6 +162,20 @@
         </div>
     </main>
 
+    <!-- Modal de Información -->
+    <div id="info-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in" onclick="this.classList.add('hidden')">
+        <div class="bg-white dark:bg-darkCard p-6 rounded-3xl shadow-2xl max-w-xs w-full text-center border dark:border-darkBorder relative" onclick="event.stopPropagation()">
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-info text-blue-600 dark:text-blue-400 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Información</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">He creado un sistema automático que actualiza los turnos los lunes, miércoles y viernes a las 20:00.</p>
+            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold uppercase text-xs tracking-wider transition-colors active:scale-95">
+                Entendido
+            </button>
+        </div>
+    </div>
+
     <script>
         const SHIFT_STYLES = {
             'PM': 'card-pm', 'PT': 'card-pt', 'PTT': 'card-ptt',
@@ -193,9 +199,12 @@
             return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         }
 
+        // --- Modificado: Asigna el mes en función de qué mes tiene más días (jueves como ancla) ---
         function getMonthFromWeek(week) {
+            // El 1 de enero de 2026 es Jueves. Al sumar (week - 1) * 7 días, siempre caeremos en el jueves de esa semana.
+            // El mes al que pertenece el jueves es el mes que tiene 4 o más días de esa semana.
             const date = new Date(2026, 0, 1);
-            date.setDate(date.getDate() + (week - 1) * 7 + 3);
+            date.setDate(date.getDate() + (week - 1) * 7);
             return MONTH_NAMES[date.getMonth()];
         }
         
@@ -216,17 +225,12 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // NUEVA FUNCIÓN: Descarga directa desde Dropbox usando tu enlace convertido
+        // Función: Descarga directa desde Dropbox usando tu enlace convertido
         function descargarDesdeDropbox(mostrarCargando = false) {
-            // Convertimos tu enlace original a formato de descarga directa (dl.dropboxusercontent.com)
-            // Tu enlace original: https://www.dropbox.com/scl/fi/q9z2cbnat1pyqxwsho9go/Turnos-2026.xlsx?rlkey=2af2zqab4wgetnjee5b4rwnyv&st=iag7wu8z&dl=0
             const urlDropbox = 'https://dl.dropboxusercontent.com/scl/fi/q9z2cbnat1pyqxwsho9go/Turnos-2026.xlsx?rlkey=2af2zqab4wgetnjee5b4rwnyv&st=iag7wu8z';
             
             if (mostrarCargando) {
-                document.getElementById('sync-status').textContent = "DESCARGANDO NUBE...";
-                const btnSync = document.getElementById('btn-initial-sync');
-                if (btnSync) btnSync.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
-                
+                document.getElementById('sync-status').textContent = "DESCARGANDO...";
                 const iconSync = document.getElementById('sync-icon');
                 if (iconSync) {
                     iconSync.classList.remove('fa-cloud-download-alt');
@@ -243,7 +247,7 @@
                     console.log("Archivo descargado de Dropbox correctamente");
                     syncData(buffer, "DROPBOX");
                     
-                    // Restaurar botones si es necesario
+                    // Restaurar botón si es necesario
                     const iconSync = document.getElementById('sync-icon');
                     if (iconSync) {
                         iconSync.classList.add('fa-cloud-download-alt');
@@ -255,16 +259,11 @@
                     document.getElementById('sync-status').textContent = db.length > 0 ? "OFFLINE (CACHÉ)" : "ERROR DE CONEXIÓN";
                     
                     if (mostrarCargando) {
-                        const btnSync = document.getElementById('btn-initial-sync');
-                        if (btnSync) btnSync.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falló conexión';
-                        
                         const iconSync = document.getElementById('sync-icon');
                         if (iconSync) {
                             iconSync.classList.add('fa-cloud-download-alt');
                             iconSync.classList.remove('fa-spinner', 'fa-spin');
                         }
-                        
-                        alert("No se pudo conectar con Dropbox. Verifica tu conexión a internet o el estado del archivo.");
                     }
                 });
         }
@@ -390,22 +389,15 @@
                     renderUI();
                 } else {
                     document.getElementById('sync-status').textContent = "ERROR: VACÍO";
-                    if (origin !== "DROPBOX" || confirm("Dropbox devolvió datos vacíos. ¿Verificar formato?")) {
-                         alert("No se detectaron turnos válidos. Comprueba el formato de la hoja 2026.");
-                    }
                 }
             } catch (err) { 
                 document.getElementById('sync-status').textContent = "ERROR AL LEER";
                 console.error(err);
-                if (origin !== "DROPBOX" || confirm("Error procesando Excel de Dropbox. ¿Ver detalles?")) {
-                    alert("Error al leer el archivo: " + err.message); 
-                }
             }
         }
 
         function renderUI() {
-            document.getElementById('upload-state').classList.add('hidden');
-            document.getElementById('btn-update-excel').classList.remove('hidden'); // Mostramos el botón de actualizar (ahora Dropbox)
+            document.getElementById('btn-update-excel').classList.remove('hidden'); 
             
             const selector = document.getElementById('user-selector');
             const saved = localStorage.getItem('turnosap_user_pref');
@@ -420,7 +412,11 @@
             });
             
             document.getElementById('selector-container').classList.remove('hidden');
-            if (saved) loadDashboard(saved);
+            
+            // Solo carga el panel de usuario si hay datos procesados y un usuario seleccionado
+            if (saved && usersInDb.length > 0) {
+                loadDashboard(saved);
+            }
         }
 
         document.getElementById('user-selector').addEventListener('change', (e) => {
@@ -464,8 +460,8 @@
                 const noteBadge = t.note ? `<div class="mt-2 bg-black/10 dark:bg-white/10 px-3 py-1 rounded-full"><span class="text-[7px] font-black uppercase tracking-tighter text-slate-700 dark:text-white">NOTAS</span></div>` : '';
 
                 card.innerHTML = `
-                    <span class="text-[8px] font-black opacity-40 uppercase mb-0.5">${monthName}</span>
-                    <span class="text-[10px] font-extrabold opacity-20 uppercase mb-1">Sem. ${t.week}</span>
+                    <span class="text-[11px] font-black opacity-75 uppercase mb-0.5 tracking-wider">${monthName}</span>
+                    <span class="text-xs font-extrabold opacity-70 uppercase mb-1">Sem. ${t.week}</span>
                     <span class="text-2xl font-black tracking-tighter ${textClass}">${isEmpty ? '---' : t.code}</span>
                     ${noteBadge}
                 `;
@@ -493,13 +489,6 @@
             }, 300);
         }
 
-        function resetApp() {
-            if(confirm("¿Seguro que quieres borrar la app del teléfono y empezar de cero?")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
         const themeToggle = document.getElementById('theme-toggle');
         themeToggle.addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
@@ -519,15 +508,16 @@
             const savedData = localStorage.getItem(STORAGE_KEY);
             
             if (savedData) {
-                // Si ya hay datos, los mostramos rápido para no hacer esperar al usuario
+                // Si ya hay datos, los mostramos rápido
                 db = JSON.parse(savedData);
                 document.getElementById('sync-status').textContent = "CACHÉ LOCAL";
                 renderUI();
-                // Y luego sincronizamos de fondo por si hay cambios en Dropbox
+                // Y actualizamos en segundo plano sin mostrar el cargador
                 descargarDesdeDropbox(false);
             } else {
-                // Si es la primera vez que abre, no tiene datos guardados, muestra la pantalla inicial de Dropbox.
-                // Podríamos forzar la descarga automática aquí también llamando a descargarDesdeDropbox(true);
+                // Si es la primera vez, muestra el selector vacío y descarga mostrando cargador
+                renderUI();
+                descargarDesdeDropbox(true);
             }
         };
     </script>
