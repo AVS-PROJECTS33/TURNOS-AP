@@ -546,11 +546,15 @@
                         const item = document.createElement('div');
                         item.className = `flex justify-between items-center px-3 py-1.5 rounded-xl ${rowClass} gap-2`;
                         item.innerHTML = `
-                            <div class="flex items-center gap-2 min-w-0 flex-1">
-                                <span class="text-sm ${nameClass} whitespace-nowrap shrink-0">${s.user} ${isMe ? '<span class="text-[10px] uppercase ml-1 opacity-60">(Tú)</span>' : ''}</span>
-                                ${s.note ? `<span class="text-[9px] text-amber-600 dark:text-amber-400 font-bold break-words whitespace-normal leading-tight flex-1 text-center px-2" title="${s.note}">${s.note}</span>` : ''}
+                            <div class="w-28 shrink-0 text-left flex items-center">
+                                <span class="text-sm ${nameClass} whitespace-nowrap">${s.user} ${isMe ? '<span class="text-[10px] uppercase ml-1 opacity-60">(Tú)</span>' : ''}</span>
                             </div>
-                            <span class="${badgeClass} shrink-0 px-3 py-1 rounded-xl font-black text-sm tracking-tight shadow-sm border ${sTextClass}">${sIsEmpty ? '---' : s.code}</span>
+                            <div class="flex-1 min-w-0 flex justify-center items-center px-1">
+                                ${s.note ? `<span class="text-[9px] text-amber-600 dark:text-amber-400 font-bold break-words whitespace-normal leading-tight text-center" title="${s.note}">${s.note}</span>` : ''}
+                            </div>
+                            <div class="w-16 shrink-0 flex justify-end items-center">
+                                <span class="${badgeClass} py-1 px-1 rounded-xl font-black text-sm tracking-tight shadow-sm border ${sTextClass} w-full text-center block">${sIsEmpty ? '---' : s.code}</span>
+                            </div>
                         `;
                         listEl.appendChild(item);
                     });
