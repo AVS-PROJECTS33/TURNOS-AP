@@ -209,6 +209,14 @@
 
         <!-- MODO GENERAL -->
         <div id="general-view" class="hidden animate-fade-in">
+            <!-- Cabecera de la vista general -->
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h2 class="text-3xl font-black uppercase tracking-tighter text-slate-800 dark:text-white">Equipo</h2>
+                <button onclick="goToTodayGeneral()" class="bg-indigo-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase shadow-lg active:scale-95 transition-transform">
+                    IR A HOY
+                </button>
+            </div>
+
             <!-- Selector de Meses -->
             <div id="month-selector" class="flex overflow-x-auto gap-2 pb-3 mb-2 snap-x hide-scrollbar scroll-smooth">
                 <!-- Inyectado por JS -->
@@ -321,6 +329,25 @@
             return MONTH_NAMES[date.getMonth()];
         }
         
+        // --- NUEVO: Calcula el rango de fechas exacto de una semana en 2026 ---
+        function getWeekDateRange(week) {
+            const year = 2026;
+            // El 4 de enero siempre pertenece a la semana 1 según el estándar ISO
+            const jan4 = new Date(year, 0, 4);
+            const dayOfJan4 = jan4.getDay() || 7; // Convertir domingo (0) a 7
+            // El lunes de la primera semana
+            const week1Start = new Date(year, 0, 4 - dayOfJan4 + 1);
+            
+            // Calculamos inicio y fin
+            const start = new Date(week1Start.getTime() + (week - 1) * 7 * 86400000);
+            const end = new Date(start.getTime() + 6 * 86400000);
+            
+            const mesesShort = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+            const format = (d) => `${String(d.getDate()).padStart(2, '0')} ${mesesShort[d.getMonth()]}`;
+            
+            return `${format(start)} - ${format(end)}`;
+        }
+
         const CURRENT_WEEK = getWeekNumber();
 
         // Mantenemos la funcionalidad de carga manual por si falla Dropbox
@@ -714,7 +741,20 @@
                 tabP.className = inactiveTabClass;
                 viewP.classList.add('hidden');
                 viewG.classList.remove('hidden');
+                // Ir a la semana actual automáticamente al entrar
+                setTimeout(() => goToTodayGeneral(), 50);
             }
+        }
+
+        function goToTodayGeneral() {
+            // Re-renderizamos los meses (lo que auto-selecciona el mes actual)
+            renderGeneralMonths();
+            
+            // Esperamos a que el DOM se dibuje y hacemos scroll a la tarjeta de hoy
+            setTimeout(() => {
+                const target = document.querySelector('.general-current-week');
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
         }
 
         function renderGeneralMonths() {
@@ -793,7 +833,7 @@
 
                 // Crear Tarjeta de la semana
                 const weekCard = document.createElement('div');
-                weekCard.className = `bg-white dark:bg-darkCard p-5 rounded-[2rem] shadow-sm border ${isCurrentWeek ? 'border-indigo-500 shadow-indigo-500/20 shadow-lg' : 'border-slate-200 dark:border-darkBorder'} animate-fade-in relative overflow-hidden`;
+                weekCard.className = `bg-white dark:bg-darkCard p-5 rounded-[2rem] shadow-sm border ${isCurrentWeek ? 'general-current-week border-indigo-500 shadow-indigo-500/20 shadow-lg' : 'border-slate-200 dark:border-darkBorder'} animate-fade-in relative overflow-hidden`;
                 
                 // Etiqueta HOY
                 if (isCurrentWeek) {
@@ -802,13 +842,18 @@
 
                 // Titulo
                 let html = `
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg">
-                            ${weekNum}
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg shrink-0">
+                                ${weekNum}
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight leading-none">Semana ${weekNum}</h3>
+                                <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 dark:text-slate-400 font-bold tracking-widest mt-1 inline-block">TOTAL AP: ${totalAP}</span>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight leading-none">Semana ${weekNum}</h3>
-                            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 dark:text-slate-400 font-bold tracking-widest mt-1 inline-block">TOTAL AP: ${totalAP}</span>
+                        <div class="text-right bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap block">${getWeekDateRange(weekNum)}</span>
                         </div>
                     </div>
                     <div class="space-y-1">
