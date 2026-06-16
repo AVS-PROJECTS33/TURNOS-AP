@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Turnos AP 2026 - v73</title>
+    <title>Turnos AP 2026 - v74</title>
     
     <!-- Configuraciones PWA e Iconos para iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -105,7 +105,7 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-extrabold uppercase tracking-tight text-slate-800 dark:text-white">Turnos AP 2026</h1>
-                    <p class="text-[10px] font-bold text-indigo-500 leading-none uppercase">v73 - <span id="sync-status">SIN DATOS</span></p>
+                    <p class="text-[10px] font-bold text-indigo-500 leading-none uppercase">v74 - <span id="sync-status">SIN DATOS</span></p>
                 </div>
             </div>
             <div class="flex gap-2 items-center">
@@ -259,11 +259,11 @@
             'V': 'card-vaca', 'H': 'card-comp', 'E': 'card-comp'
         };
 
-        const TARGET_NAMES = ["ANGY", "PACO", "IVAN", "JEAN", "NATALIA", "LUIS", "ALBERTO", "ENZO"];
+        const TARGET_NAMES = ["ANGY", "PACO", "IVAN", "JEAN", "NATALIA", "LUIS", "ALBERTO", "ENZO", "NUEVO"];
         const MONTH_NAMES = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
 
         // Usamos una nueva clave para asegurar que cargue la lógica correcta desde cero
-        const STORAGE_KEY = 'sync_turnosap_v73';
+        const STORAGE_KEY = 'sync_turnosap_v74';
         let db = [];
 
         function getWeekNumber() {
