@@ -93,6 +93,10 @@
 
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Ocultar barra de scroll para el selector de meses */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-slate-100 min-h-screen pb-24">
@@ -129,66 +133,93 @@
         <!-- Input de archivo oculto (Se mantiene por si se necesita uso local) -->
         <input type="file" id="file-input" class="hidden" accept=".xlsx">
 
-        <!-- Contenedor del selector visible desde el inicio -->
-        <div id="selector-container" class="mb-6 hidden animate-fade-in">
-            <div class="flex justify-between items-center mb-2 px-1">
-                <label class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Usuario</label>
-            </div>
-            <select id="user-selector" class="w-full bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-darkBorder rounded-2xl px-5 py-4 font-bold shadow-lg dark:text-white appearance-none text-lg outline-none focus:border-indigo-500 transition-colors">
-                <option value="">ELIJE TU NOMBRE</option>
-            </select>
+        <!-- Selector de Modos (Personal / General) -->
+        <div id="view-toggle-container" class="bg-slate-200/70 dark:bg-slate-800/70 p-1.5 rounded-2xl mb-6 max-w-sm mx-auto flex backdrop-blur-sm relative z-10 border border-slate-300/50 dark:border-slate-700/50 hidden animate-fade-in">
+            <button id="tab-personal" onclick="switchView('personal')" class="flex-1 py-2.5 text-xs font-black rounded-xl bg-white dark:bg-darkCard shadow-md text-indigo-600 dark:text-indigo-400 transition-all uppercase tracking-wider">
+                <i class="fas fa-user mr-1"></i> Personal
+            </button>
+            <button id="tab-general" onclick="switchView('general')" class="flex-1 py-2.5 text-xs font-bold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all uppercase tracking-wider">
+                <i class="fas fa-users mr-1"></i> General
+            </button>
         </div>
 
-        <div id="dashboard" class="hidden space-y-4 animate-fade-in">
-            <!-- Estadísticas rápidas -->
-            <div class="bg-white dark:bg-darkCard p-6 rounded-[2.5rem] shadow-sm border dark:border-darkBorder">
-                <div class="flex justify-between items-start mb-6">
-                    <div>
-                        <h2 id="view-title" class="text-4xl font-black uppercase tracking-tighter text-slate-800 dark:text-white">---</h2>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Semana Actual: <span id="cur-week-span" class="text-indigo-600 dark:text-indigo-400 font-black">--</span></p>
-                        </div>
-                    </div>
-                    <button onclick="scrollToCurrentWeek()" class="bg-indigo-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase shadow-lg active:scale-95 transition-transform">
-                        IR A HOY
-                    </button>
+        <!-- MODO PERSONAL -->
+        <div id="personal-view" class="animate-fade-in">
+            <!-- Contenedor del selector visible desde el inicio -->
+            <div id="selector-container" class="mb-6 hidden">
+                <div class="flex justify-between items-center mb-2 px-1">
+                    <label class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Usuario</label>
                 </div>
-
-                <div id="stats-summary" class="grid grid-cols-2 gap-3">
-                    <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-3xl border border-emerald-100 dark:border-emerald-800/30">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-sun text-emerald-500 text-[10px]"></i>
-                            <span class="text-[9px] font-black text-emerald-600/70 dark:text-emerald-400/70 uppercase">Mañanas</span>
-                        </div>
-                        <p id="count-m" class="text-3xl font-black text-emerald-700 dark:text-emerald-300">0</p>
-                    </div>
-                    <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-3xl border border-orange-100 dark:border-orange-800/30">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-cloud-sun text-orange-500 text-[10px]"></i>
-                            <span class="text-[9px] font-black text-orange-600/70 dark:text-orange-400/70 uppercase">Tardes</span>
-                        </div>
-                        <p id="count-t" class="text-3xl font-black text-orange-700 dark:text-orange-300">0</p>
-                    </div>
-                    <div class="bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-moon text-indigo-400 text-[10px]"></i>
-                            <span class="text-[9px] font-black text-slate-400 uppercase">Noches</span>
-                        </div>
-                        <p id="count-n" class="text-3xl font-black text-white">0</p>
-                    </div>
-                    <div class="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-3xl border border-amber-100 dark:border-amber-800/30">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-umbrella-beach text-amber-500 text-[10px]"></i>
-                            <span class="text-[9px] font-black text-amber-600/70 dark:text-amber-400/70 uppercase">Vaca/H/E</span>
-                        </div>
-                        <p id="count-v" class="text-3xl font-black text-amber-700 dark:text-amber-300">0</p>
-                    </div>
-                </div>
+                <select id="user-selector" class="w-full bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-darkBorder rounded-2xl px-5 py-4 font-bold shadow-lg dark:text-white appearance-none text-lg outline-none focus:border-indigo-500 transition-colors">
+                    <option value="">ELIJE TU NOMBRE</option>
+                </select>
             </div>
 
-            <div id="wrapper_turnos" class="grid grid-cols-3 gap-3"></div>
+            <div id="dashboard" class="hidden space-y-4">
+                <!-- Estadísticas rápidas -->
+                <div class="bg-white dark:bg-darkCard p-6 rounded-[2.5rem] shadow-sm border dark:border-darkBorder">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 id="view-title" class="text-4xl font-black uppercase tracking-tighter text-slate-800 dark:text-white">---</h2>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Semana Actual: <span id="cur-week-span" class="text-indigo-600 dark:text-indigo-400 font-black">--</span></p>
+                            </div>
+                        </div>
+                        <button onclick="scrollToCurrentWeek()" class="bg-indigo-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase shadow-lg active:scale-95 transition-transform">
+                            IR A HOY
+                        </button>
+                    </div>
+
+                    <div id="stats-summary" class="grid grid-cols-2 gap-3">
+                        <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-3xl border border-emerald-100 dark:border-emerald-800/30">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="fas fa-sun text-emerald-500 text-[10px]"></i>
+                                <span class="text-[9px] font-black text-emerald-600/70 dark:text-emerald-400/70 uppercase">Mañanas</span>
+                            </div>
+                            <p id="count-m" class="text-3xl font-black text-emerald-700 dark:text-emerald-300">0</p>
+                        </div>
+                        <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-3xl border border-orange-100 dark:border-orange-800/30">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="fas fa-cloud-sun text-orange-500 text-[10px]"></i>
+                                <span class="text-[9px] font-black text-orange-600/70 dark:text-orange-400/70 uppercase">Tardes</span>
+                            </div>
+                            <p id="count-t" class="text-3xl font-black text-orange-700 dark:text-orange-300">0</p>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-3xl border border-slate-800">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="fas fa-moon text-indigo-400 text-[10px]"></i>
+                                <span class="text-[9px] font-black text-slate-400 uppercase">Noches</span>
+                            </div>
+                            <p id="count-n" class="text-3xl font-black text-white">0</p>
+                        </div>
+                        <div class="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-3xl border border-amber-100 dark:border-amber-800/30">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="fas fa-umbrella-beach text-amber-500 text-[10px]"></i>
+                                <span class="text-[9px] font-black text-amber-600/70 dark:text-amber-400/70 uppercase">Vaca/H/E</span>
+                            </div>
+                            <p id="count-v" class="text-3xl font-black text-amber-700 dark:text-amber-300">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="wrapper_turnos" class="grid grid-cols-3 gap-3"></div>
+            </div>
         </div>
+
+        <!-- MODO GENERAL -->
+        <div id="general-view" class="hidden animate-fade-in">
+            <!-- Selector de Meses -->
+            <div id="month-selector" class="flex overflow-x-auto gap-2 pb-3 mb-2 snap-x hide-scrollbar scroll-smooth">
+                <!-- Inyectado por JS -->
+            </div>
+            
+            <!-- Contenedor de las Semanas del Mes -->
+            <div id="general-weeks-container" class="space-y-4">
+                <!-- Inyectado por JS -->
+            </div>
+        </div>
+
     </main>
 
     <!-- Modal de Información (Tutorial Completo) -->
@@ -223,6 +254,12 @@
                         <li>Qué turno tiene cada compañero, ordenados de PM a CTT.</li>
                         <li>Pequeñas notas individuales junto al nombre del compañero si las hay.</li>
                     </ul>
+                </div>
+                
+                <!-- Modo General -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <h4 class="font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><i class="fas fa-users text-purple-500"></i> Modo General</h4>
+                    <p class="text-xs leading-relaxed">Con el nuevo selector superior puedes cambiar al <strong>Modo General</strong>. Te permite seleccionar un mes y ver de un vistazo el cuadrante completo de todos los compañeros para las semanas de ese mes, ideal para planificar cambios de turno.</p>
                 </div>
             </div>
 
@@ -489,6 +526,12 @@
             
             document.getElementById('selector-container').classList.remove('hidden');
             
+            // Mostrar los botones de Modo solo si hay datos
+            if (db.length > 0) {
+                document.getElementById('view-toggle-container').classList.remove('hidden');
+                renderGeneralMonths(); // Pre-cargar la vista general
+            }
+            
             // Solo carga el panel de usuario si hay datos procesados y un usuario seleccionado
             if (saved && usersInDb.length > 0) {
                 loadDashboard(saved);
@@ -649,6 +692,163 @@
         function updateThemeIcon() {
             const isDark = document.documentElement.classList.contains('dark');
             document.getElementById('theme-icon').className = isDark ? 'fas fa-sun text-yellow-400 text-base w-5 text-center' : 'fas fa-moon text-indigo-600 text-base w-5 text-center';
+        }
+
+        // --- LÓGICA DEL MODO GENERAL ---
+        function switchView(mode) {
+            const tabP = document.getElementById('tab-personal');
+            const tabG = document.getElementById('tab-general');
+            const viewP = document.getElementById('personal-view');
+            const viewG = document.getElementById('general-view');
+
+            const activeTabClass = "flex-1 py-2.5 text-xs font-black rounded-xl bg-white dark:bg-darkCard shadow-md text-indigo-600 dark:text-indigo-400 transition-all uppercase tracking-wider";
+            const inactiveTabClass = "flex-1 py-2.5 text-xs font-bold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all uppercase tracking-wider";
+
+            if (mode === 'personal') {
+                tabP.className = activeTabClass;
+                tabG.className = inactiveTabClass;
+                viewP.classList.remove('hidden');
+                viewG.classList.add('hidden');
+            } else {
+                tabG.className = activeTabClass;
+                tabP.className = inactiveTabClass;
+                viewP.classList.add('hidden');
+                viewG.classList.remove('hidden');
+            }
+        }
+
+        function renderGeneralMonths() {
+            const monthContainer = document.getElementById('month-selector');
+            monthContainer.innerHTML = '';
+            
+            const currentMonthName = getMonthFromWeek(CURRENT_WEEK);
+
+            MONTH_NAMES.forEach(month => {
+                const btn = document.createElement('button');
+                const isActive = month === currentMonthName;
+                
+                btn.className = `shrink-0 snap-center px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm ${isActive ? 'bg-indigo-600 text-white border-indigo-700 shadow-indigo-500/30' : 'bg-white dark:bg-darkCard text-slate-600 dark:text-slate-300 border-slate-200 dark:border-darkBorder hover:bg-slate-50 dark:hover:bg-slate-800'}`;
+                btn.textContent = month;
+                btn.onclick = () => {
+                    // Quitar active de todos
+                    Array.from(monthContainer.children).forEach(c => {
+                        c.className = `shrink-0 snap-center px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm bg-white dark:bg-darkCard text-slate-600 dark:text-slate-300 border-slate-200 dark:border-darkBorder hover:bg-slate-50 dark:hover:bg-slate-800`;
+                    });
+                    // Poner active al clicado
+                    btn.className = `shrink-0 snap-center px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm bg-indigo-600 text-white border-indigo-700 shadow-indigo-500/30`;
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    renderGeneralWeeks(month);
+                };
+                
+                monthContainer.appendChild(btn);
+
+                // Auto renderizar el mes actual al inicio
+                if (isActive) {
+                    // Un pequeño retraso para asegurar que el DOM está listo para el scroll
+                    setTimeout(() => {
+                        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                        renderGeneralWeeks(month);
+                    }, 100);
+                }
+            });
+        }
+
+        function renderGeneralWeeks(monthName) {
+            const container = document.getElementById('general-weeks-container');
+            container.innerHTML = '';
+
+            // Obtener todas las semanas únicas que pertenecen al mes
+            const weeksInMonth = [...new Set(db.filter(s => getMonthFromWeek(s.week) === monthName).map(s => s.week))].sort((a,b) => a - b);
+
+            if (weeksInMonth.length === 0) {
+                container.innerHTML = `<div class="text-center p-8 text-slate-400 font-bold text-sm">No hay datos para este mes.</div>`;
+                return;
+            }
+
+            weeksInMonth.forEach(weekNum => {
+                const isCurrentWeek = weekNum === CURRENT_WEEK;
+                const weekShifts = db.filter(s => s.week === weekNum);
+                
+                // Contar total AP
+                let totalAP = 0;
+                weekShifts.forEach(s => {
+                    if (s.code !== 'S/T' && !s.code.includes('V') && !s.code.includes('H') && !s.code.includes('E')) totalAP++;
+                });
+
+                // Ordenar turnos como en el Modal
+                const customOrder = ['PM', 'PT', 'PTT', 'CM', 'CT', 'CTT'];
+                weekShifts.sort((a, b) => {
+                    if (a.code === 'PM.' && b.code !== 'PM.') return -1;
+                    if (b.code === 'PM.' && a.code !== 'PM.') return 1;
+
+                    const codeA = a.code.replace('.', '');
+                    const codeB = b.code.replace('.', '');
+                    let posA = customOrder.indexOf(codeA);
+                    let posB = customOrder.indexOf(codeB);
+                    if (posA === -1) posA = 99;
+                    if (posB === -1) posB = 99;
+                    if (posA !== posB) return posA - posB;
+                    return a.code.localeCompare(b.code);
+                });
+
+                // Crear Tarjeta de la semana
+                const weekCard = document.createElement('div');
+                weekCard.className = `bg-white dark:bg-darkCard p-5 rounded-[2rem] shadow-sm border ${isCurrentWeek ? 'border-indigo-500 shadow-indigo-500/20 shadow-lg' : 'border-slate-200 dark:border-darkBorder'} animate-fade-in relative overflow-hidden`;
+                
+                // Etiqueta HOY
+                if (isCurrentWeek) {
+                    weekCard.innerHTML += `<div class="absolute top-0 right-0 bg-indigo-500 text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-xl">Semana Actual</div>`;
+                }
+
+                // Titulo
+                let html = `
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg">
+                            ${weekNum}
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight leading-none">Semana ${weekNum}</h3>
+                            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 dark:text-slate-400 font-bold tracking-widest mt-1 inline-block">TOTAL AP: ${totalAP}</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                `;
+
+                // Filas de compañeros
+                weekShifts.forEach(s => {
+                    const sIsEmpty = s.code === "S/T";
+                    const sIsNoche = !sIsEmpty && s.code.endsWith('.');
+                    const sBaseCode = sIsNoche ? s.code.slice(0, -1) : s.code;
+                    
+                    let badgeClass = sIsEmpty ? 'bg-slate-200 dark:bg-slate-700 opacity-50 text-slate-500 dark:text-slate-400' : (SHIFT_STYLES[sBaseCode] || 'card-default');
+                    if (sIsNoche) badgeClass += ' card-noche';
+                    
+                    const sTextClass = s.alert ? 'text-alerta-roja' : '';
+                    const savedUser = localStorage.getItem('turnosap_user_pref');
+                    const isMe = s.user === savedUser;
+                    
+                    const rowClass = isMe ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800 border' : 'bg-slate-50 dark:bg-slate-800/50';
+                    const nameClass = isMe ? 'text-indigo-700 dark:text-indigo-400 font-black' : 'text-slate-700 dark:text-slate-300 font-bold';
+
+                    html += `
+                        <div class="flex justify-between items-center px-3 py-2 rounded-xl ${rowClass} gap-2">
+                            <div class="w-28 shrink-0 text-left flex items-center">
+                                <span class="text-sm ${nameClass} whitespace-nowrap">${s.user}</span>
+                            </div>
+                            <div class="flex-1 min-w-0 flex justify-center items-center px-1">
+                                ${s.note ? `<span class="text-[9px] text-amber-600 dark:text-amber-400 font-bold break-words whitespace-normal leading-tight text-center" title="${s.note}"><i class="fas fa-sticky-note mr-0.5"></i>${s.note}</span>` : ''}
+                            </div>
+                            <div class="w-16 shrink-0 flex justify-end items-center">
+                                <span class="${badgeClass} py-1 px-1 rounded-xl font-black text-sm tracking-tight shadow-sm border ${sTextClass} w-full text-center block">${sIsEmpty ? '---' : s.code}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                weekCard.innerHTML += html;
+                container.appendChild(weekCard);
+            });
         }
 
         window.onload = () => {
