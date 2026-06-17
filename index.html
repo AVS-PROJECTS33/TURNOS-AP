@@ -588,7 +588,12 @@
             });
 
             // Update Modal Title
-            document.getElementById('shift-modal-title').innerHTML = `SEMANA ${weekNum} <span class="text-[11px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg text-slate-500 dark:text-slate-400 font-bold tracking-widest ml-2 align-middle">TOTAL AP (${totalAP})</span>`;
+            const dateRange = getWeekDateRange(weekNum);
+            document.getElementById('shift-modal-title').innerHTML = `
+                <span class="flex flex-col">
+                    <span class="flex items-center">SEMANA ${weekNum} <span class="text-[11px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg text-slate-500 dark:text-slate-400 font-bold tracking-widest ml-2 align-middle">TOTAL AP (${totalAP})</span></span>
+                    <span class="text-[10px] text-indigo-500 dark:text-indigo-400 mt-1.5 font-bold tracking-widest uppercase"><i class="fas fa-calendar-day mr-1"></i> ${dateRange}</span>
+                </span>`;
             
             // Buscar si alguien tiene nota (solo para el modal header, opcional)
             const noteEl = document.getElementById('shift-modal-note');
@@ -820,8 +825,8 @@
                         <table class="w-full text-sm text-left whitespace-nowrap">
                             <thead>
                                 <tr class="bg-slate-50 dark:bg-slate-800/50 border-b dark:border-slate-200 dark:border-slate-700/50">
-                                    <th class="sticky left-0 z-20 bg-slate-50 dark:bg-slate-800 p-4 font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[10px] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] border-r dark:border-slate-700/50">
-                                        Compañeros
+                                    <th class="sticky left-0 z-20 bg-slate-50 dark:bg-slate-800 px-2.5 py-3 font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[9px] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] border-r dark:border-slate-700/50">
+                                        NOMBRES
                                     </th>
             `;
 
@@ -858,8 +863,8 @@
                 
                 // Celda Pegajosa del Nombre
                 tableHTML += `
-                    <td class="sticky left-0 z-10 ${rowBg} p-4 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] border-r dark:border-slate-800/50">
-                        <span class="text-xs ${nameColor}">${user} ${isMe ? '<span class="text-[9px] uppercase ml-1 opacity-60">(Tú)</span>' : ''}</span>
+                    <td class="sticky left-0 z-10 ${rowBg} px-2.5 py-3 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] border-r dark:border-slate-800/50 max-w-[85px]">
+                        <span class="text-[11px] ${nameColor} truncate block leading-tight">${user} ${isMe ? '<span class="text-[8px] uppercase ml-0.5 opacity-60">(Tú)</span>' : ''}</span>
                     </td>
                 `;
 
