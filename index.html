@@ -121,6 +121,10 @@
                 <button id="btn-update-excel" onclick="descargarDesdeDropbox(true)" class="hidden px-4 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 transition-all active:scale-90 shadow-sm border border-emerald-200 dark:border-emerald-800" title="Sincronizar con Dropbox">
                     <i id="sync-icon" class="fas fa-cloud-download-alt text-base w-5 text-center"></i>
                 </button>
+                <!-- Botón de ajustes -->
+                <button onclick="checkPasswordAndOpenSettings()" class="px-4 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all active:scale-90 shadow-sm border border-slate-200 dark:border-slate-700" title="Ajustes">
+                    <i class="fas fa-cog text-slate-600 dark:text-slate-400 text-base w-5 text-center"></i>
+                </button>
                 <!-- Botón de tema oscuro -->
                 <button id="theme-toggle" class="px-4 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all active:scale-90 shadow-sm border border-slate-200 dark:border-slate-700" title="Cambiar Tema">
                     <i id="theme-icon" class="fas fa-moon text-indigo-600 dark:text-yellow-400 text-base w-5 text-center"></i>
@@ -297,6 +301,35 @@
         </div>
     </div>
 
+    <!-- Modal de Ajustes -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in" onclick="this.classList.add('hidden')">
+        <div class="bg-white dark:bg-darkCard p-6 rounded-3xl shadow-2xl max-w-sm w-full border dark:border-darkBorder relative max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                        <i class="fas fa-cog text-slate-600 dark:text-slate-400 text-lg"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Ajustes</h3>
+                </div>
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-2xl text-xs text-red-800 dark:text-red-200 font-bold shrink-0">
+                <i class="fas fa-exclamation-triangle mr-1"></i> ES MUY IMPORTANTE QUE EL NOMBRE COINCIDA CON EL EXCEL DE TURNOS
+            </div>
+            
+            <div class="overflow-y-auto flex-1 pr-1 space-y-3" id="settings-workers-list">
+                <!-- Inyectado por JS -->
+            </div>
+
+            <button onclick="saveSettings()" class="w-full mt-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase text-xs tracking-wider transition-colors active:scale-95 shrink-0">
+                Guardar y Recargar
+            </button>
+        </div>
+    </div>
+
     <script>
         const SHIFT_STYLES = {
             'PM': 'card-pm', 'PT': 'card-pt', 'PTT': 'card-ptt',
@@ -304,8 +337,68 @@
             'V': 'card-vaca', 'H': 'card-comp', 'E': 'card-comp'
         };
 
-        const TARGET_NAMES = ["ANGY", "PACO", "IVAN", "JEAN", "NATALIA", "LUIS", "ALBERTO", "ENZO", "CRISTINA"];
+        let workersConfig = JSON.parse(localStorage.getItem('turnosap_workers_v1')) || [
+            { id: 1, name: "ANGY", enabled: true },
+            { id: 2, name: "PACO", enabled: true },
+            { id: 3, name: "IVAN", enabled: true },
+            { id: 4, name: "JEAN", enabled: true },
+            { id: 5, name: "NATALIA", enabled: true },
+            { id: 6, name: "LUIS", enabled: true },
+            { id: 7, name: "ALBERTO", enabled: true },
+            { id: 8, name: "ENZO", enabled: true },
+            { id: 9, name: "CRISTINA", enabled: true },
+            { id: 10, name: "NUEVO TRABAJADOR", enabled: false }
+        ];
+
+        let TARGET_NAMES = workersConfig.filter(w => w.enabled && w.name.trim() !== "").map(w => w.name);
+
         const MONTH_NAMES = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+
+        function checkPasswordAndOpenSettings() {
+            const pass = prompt("Introduce la contraseña de ajustes:");
+            if (pass === "APS") {
+                renderSettings();
+                document.getElementById('settings-modal').classList.remove('hidden');
+            } else if (pass !== null) {
+                alert("Contraseña incorrecta");
+            }
+        }
+
+        function renderSettings() {
+            const list = document.getElementById('settings-workers-list');
+            list.innerHTML = '';
+            workersConfig.forEach((w, index) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700";
+                item.innerHTML = `
+                    <div class="flex-1">
+                        <input type="text" id="worker-name-${index}" value="${w.name}" placeholder="Nombre..." class="w-full bg-white dark:bg-darkCard border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-indigo-500 uppercase">
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="worker-enabled-${index}" class="sr-only peer" ${w.enabled ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
+                    </label>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function saveSettings() {
+            workersConfig.forEach((w, index) => {
+                const nameInput = document.getElementById(`worker-name-${index}`).value.trim().toUpperCase();
+                const enabledInput = document.getElementById(`worker-enabled-${index}`).checked;
+                w.name = nameInput;
+                w.enabled = enabledInput;
+            });
+            localStorage.setItem('turnosap_workers_v1', JSON.stringify(workersConfig));
+            localStorage.removeItem(STORAGE_KEY); // Borrar caché para obligar a re-procesar los turnos
+            
+            const currentPref = localStorage.getItem('turnosap_user_pref');
+            if (!workersConfig.find(w => w.enabled && w.name === currentPref)) {
+                localStorage.removeItem('turnosap_user_pref');
+            }
+            location.reload();
+        }
 
         // Usamos una nueva clave para asegurar que cargue la lógica correcta desde cero
         const STORAGE_KEY = 'sync_turnosap_v74';
